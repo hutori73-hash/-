@@ -36,6 +36,17 @@ client.on('messageCreate', (message) => {
     }
 });
 
+// スラッシュコマンド追加分
+client.on('interactionCreate', async interaction => {
+    if (!interaction.isChatInputCommand()) return;
+  
+    if (interaction.commandName === 'ping') {
+      await interaction.reply('🏓 Pong!');
+      console.log(`📝 ${interaction.user.tag} が /ping コマンドを使用`);
+    }
+  });
+  
+
 // エラーハンドリング
 client.on('error', (error) => {
     console.error('❌ Discord クライアントエラー:', error);
