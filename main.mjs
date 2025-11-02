@@ -21,21 +21,12 @@ client.once('ready', () => {
   console.log(`📊 ${client.guilds.cache.size} つのサーバーに参加中`);
 });
 
-client.on('messageCreate', (message) => {
-  if (message.author.bot) return;
-
-  if (message.content.toLowerCase() === 'ping') {
-    message.reply('🏓 pong!');
-    console.log(`📝 ${message.author.tag} が ping メッセージを送信`);
-  }
-});
-
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === '今日の気分') {
     const randomMood = moods[Math.floor(Math.random() * moods.length)];
-    await interaction.reply(`🧠 今日の気分は…「${randomMood}」です！`);
+    await interaction.reply(`${randomMood}`);
     console.log(`📝 ${interaction.user.tag} が /今日の気分 を実行 → ${randomMood}`);
   }
 });
