@@ -3,7 +3,8 @@
 import { Client, GatewayIntentBits } from 'discord.js';
 import dotenv from 'dotenv';
 import express from 'express';
-import { moods } from './moods.js'; // ← 返答候補を読み込み
+import { moods } from './moods.js';
+import { foods } from './foods.js';
 
 dotenv.config();
 
@@ -24,10 +25,29 @@ client.once('ready', () => {
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
+  // /今日の気分
   if (interaction.commandName === '今日の気分') {
     const randomMood = moods[Math.floor(Math.random() * moods.length)];
     await interaction.reply(`${randomMood}`);
     console.log(`📝 ${interaction.user.tag} が /今日の気分 を実行 → ${randomMood}`);
+  }
+
+  // /食べ物占い
+  if (interaction.commandName === '食べ物占い') {
+    const roll = Math.random();
+    let rarity;
+    if (roll < 0.10) {
+      rarity = 'SR';
+    } else if (roll < 0.40) {
+      rarity = 'R';
+    } else {
+      rarity = 'N';
+    }
+
+    const candidates = foods[rarity];
+    const selected = candidates[Math.floor(Math.random() * candidates.length)];
+    await interaction.reply(`${selected}`);
+    console.log(`🍽 ${interaction.user.tag} が /食べ物占い → ${rarity}`);
   }
 });
 

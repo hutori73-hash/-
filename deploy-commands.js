@@ -5,8 +5,12 @@ const { DISCORD_TOKEN, CLIENT_ID, GUILD_ID } = process.env;
 // スラッシュコマンド定義
 const commands = [
   new SlashCommandBuilder()
-    .setName('今日の気分') // ← コマンド名（日本語でもOK）
+    .setName('今日の気分')
     .setDescription('今日の気分をBotが占います')
+    .toJSON(),
+  new SlashCommandBuilder()
+    .setName('食べ物占い')
+    .setDescription('あなたを食べ物に例えて占います！')
     .toJSON()
 ];
 
