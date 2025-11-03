@@ -25,13 +25,6 @@ client.once('ready', () => {
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
-  // /今日の気分
-  if (interaction.commandName === '今日の気分') {
-    const randomMood = moods[Math.floor(Math.random() * moods.length)];
-    await interaction.reply(`${randomMood}`);
-    console.log(`📝 ${interaction.user.tag} が /今日の気分 を実行 → ${randomMood}`);
-  }
-
   // /食べ物占い
   if (interaction.commandName === '食べ物占い') {
     const roll = Math.random();
@@ -43,6 +36,13 @@ client.on('interactionCreate', async interaction => {
     } else {
       rarity = 'N';
     }
+
+    // /今日の気分
+  if (interaction.commandName === '今日の気分') {
+    const randomMood = moods[Math.floor(Math.random() * moods.length)];
+    await interaction.reply(`${randomMood}`);
+    console.log(`📝 ${interaction.user.tag} が /今日の気分 を実行 → ${randomMood}`);
+  }
 
     const candidates = foods[rarity];
     const selected = candidates[Math.floor(Math.random() * candidates.length)];
