@@ -1,6 +1,9 @@
 require('dotenv').config();
 const { REST, Routes, SlashCommandBuilder } = require('discord.js');
-const { DISCORD_TOKEN, CLIENT_ID, GUILD_ID } = process.env;
+const { DISCORD_TOKEN, CLIENT_ID, GUILD_IDS } = process.env;
+
+// サーバーIDを配列に変換（文字列のままでOK）
+const guildIdList = GUILD_IDS?.split(',') ?? [];
 
 // スラッシュコマンド定義
 const commands = [
@@ -17,17 +20,18 @@ const commands = [
 // RESTクライアントにトークンを設定
 const rest = new REST({ version: '10' }).setToken(DISCORD_TOKEN);
 
-// コマンド登録処理
+// コマンド登録処理（複数Guildに対応）
 (async () => {
   try {
-    console.log('🔄 /今日の気分 コマンド登録中...');
-    await rest.put(
-      Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-      { body: commands }
-    );
-    console.log('✅ 登録完了');
+    for (const guildId of guildIdList) {
+      console.log(`🔄 サーバー ${guildId} にコマンド登録中...`);
+      await rest.put(
+        Routes.applicationGuildCommands(CLIENT_ID, guildId),
+        { body: commands }
+      );
+      console.log(`✅ サーバー ${guildId} に登録完了`);
+    }
   } catch (error) {
     console.error('❌ 登録エラー:', error);
   }
 })();
-
