@@ -6,14 +6,14 @@ const guildIdList = GUILD_ID?.split(',') ?? [];
 
 const commands = [
   new SlashCommandBuilder()
-    .setName('今日の気分')
-    .setDescription('今日の気分をBotが占います')
-    .toJSON(),
-  new SlashCommandBuilder()
     .setName('食べ物占い')
     .setDescription('あなたを食べ物に例えて占います！')
+    .toJSON(),
+  new SlashCommandBuilder()
+    .setName('今日の気分')
+    .setDescription('今日の気分をBotが占います')
     .toJSON()
-];
+  ];
 
 const rest = new REST({ version: '10' }).setToken(DISCORD_TOKEN);
 
