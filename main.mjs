@@ -1,5 +1,3 @@
-// main.mjs - Discord Botのメインプログラム
-
 import { Client, GatewayIntentBits } from 'discord.js';
 import dotenv from 'dotenv';
 import express from 'express';
@@ -22,10 +20,10 @@ client.once('ready', () => {
   console.log(`📊 ${client.guilds.cache.size} つのサーバーに参加中`);
 });
 
+// ✅ スラッシュコマンド：/食べ物占い
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
-  // /食べ物占い
   if (interaction.commandName === '食べ物占い') {
     const roll = Math.random();
     let rarity;
@@ -37,17 +35,21 @@ client.on('interactionCreate', async interaction => {
       rarity = 'N';
     }
 
-    // /今日の気分
-  if (interaction.commandName === '今日の気分') {
-    const randomMood = moods[Math.floor(Math.random() * moods.length)];
-    await interaction.reply(`${randomMood}`);
-    console.log(`📝 ${interaction.user.tag} が /今日の気分 を実行 → ${randomMood}`);
-  }
-
     const candidates = foods[rarity];
     const selected = candidates[Math.floor(Math.random() * candidates.length)];
     await interaction.reply(`${selected}`);
     console.log(`🍽 ${interaction.user.tag} が /食べ物占い → ${rarity}`);
+  }
+});
+
+// ✅ 通常メッセージ：/今日の気分 に反応
+client.on('messageCreate', async message => {
+  if (message.author.bot) return;
+
+  if (message.content.trim() === '/今日の気分') {
+    const randomMood = moods[Math.floor(Math.random() * moods.length)];
+    await message.reply(`${randomMood}`);
+    console.log(`📝 ${message.author.tag} が /今日の気分 を送信 → ${randomMood}`);
   }
 });
 
