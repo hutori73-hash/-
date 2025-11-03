@@ -42,14 +42,14 @@ client.on('interactionCreate', async interaction => {
   }
 });
 
-// ✅ 通常メッセージ：/今日の気分 に反応
+// ✅ 通常メッセージ：「今日の気分」に部分一致で反応
 client.on('messageCreate', async message => {
   if (message.author.bot) return;
 
-  if (message.content.trim() === '/今日の気分') {
+  if (message.content.includes('今日の気分')) {
     const randomMood = moods[Math.floor(Math.random() * moods.length)];
     await message.reply(`${randomMood}`);
-    console.log(`📝 ${message.author.tag} が /今日の気分 を送信 → ${randomMood}`);
+    console.log(`📝 ${message.author.tag} が「${message.content}」に反応 → ${randomMood}`);
   }
 });
 
