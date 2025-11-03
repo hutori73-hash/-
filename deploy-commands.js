@@ -1,11 +1,9 @@
 require('dotenv').config();
 const { REST, Routes, SlashCommandBuilder } = require('discord.js');
-const { DISCORD_TOKEN, CLIENT_ID, GUILD_IDS } = process.env;
+const { DISCORD_TOKEN, CLIENT_ID, GUILD_ID } = process.env;
 
-// サーバーIDを配列に変換（文字列のままでOK）
-const guildIdList = GUILD_IDS?.split(',') ?? [];
+const guildIdList = GUILD_ID?.split(',') ?? [];
 
-// スラッシュコマンド定義
 const commands = [
   new SlashCommandBuilder()
     .setName('今日の気分')
@@ -17,21 +15,30 @@ const commands = [
     .toJSON()
 ];
 
-// RESTクライアントにトークンを設定
 const rest = new REST({ version: '10' }).setToken(DISCORD_TOKEN);
 
-// コマンド登録処理（複数Guildに対応）
 (async () => {
-  try {
-    for (const guildId of guildIdList) {
-      console.log(`🔄 サーバー ${guildId} にコマンド登録中...`);
+  for (const guildId of guildIdList) {
+    try {
+      console.log(`🔄 Guild ${guildId} にコマンド登録中...`);
       await rest.put(
         Routes.applicationGuildCommands(CLIENT_ID, guildId),
         { body: commands }
       );
-      console.log(`✅ サーバー ${guildId} に登録完了`);
+      console.log(`✅ Guild ${guildId} に登録完了`);
+    } catch (error) {
+      console.error(`❌ Guild ${guildId} の登録に失敗:`, error);
     }
+  }
+
+  try {
+    console.log('🌐 グローバルコマンドを登録中...');
+    await rest.put(
+      Routes.applicationCommands(CLIENT_ID),
+      { body: commands }
+    );
+    console.log('✅ グローバルコマンド登録完了（反映に最大1時間かかる場合あり）');
   } catch (error) {
-    console.error('❌ 登録エラー:', error);
+    console.error('❌ グローバルコマンド登録に失敗:', error);
   }
 })();
