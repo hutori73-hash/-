@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import { moods } from './moods.js';
 import { foods } from './foods.js';
+import { nriichi } from './ri-chan.js';
 
 dotenv.config();
 
@@ -42,17 +43,28 @@ client.on('interactionCreate', async interaction => {
   }
 });
 
-// ✅ 通常メッセージ：「今日の気分」に部分一致で反応
+// ✅ 通常メッセージ：キーワード反応
 client.on('messageCreate', async message => {
   if (message.author.bot) return;
 
-  if (message.content.includes('今日の気分')) {
+  const content = message.content;
+
+  // 「今日の気分」に反応
+  if (content.includes('今日の気分')) {
     const randomMood = moods[Math.floor(Math.random() * moods.length)];
-    await message.reply(`${randomMood}`);
-    console.log(`📝 ${message.author.tag} が「${message.content}」に反応 → ${randomMood}`);
+    await message.reply(randomMood);
+    console.log(`📝 ${message.author.tag} が「${content}」に反応 → ${randomMood}`);
+  }
+
+  // 「ﾝﾘｲﾁ」に反応
+  if (content.includes('ﾝﾘｲﾁ')) {
+    const randomReply = nriichi[Math.floor(Math.random() * nriichi.length)];
+    await message.reply(randomReply);
+    console.log(`🌀 ${message.author.tag} が「${content}」に反応 → ${randomReply}`);
   }
 });
 
+// ✅ エラーハンドリング
 client.on('error', (error) => {
   console.error('❌ Discord クライアントエラー:', error);
 });
@@ -75,6 +87,7 @@ client.login(process.env.DISCORD_TOKEN)
     process.exit(1);
   });
 
+// ✅ Express Webサーバー（Uptime用）
 const app = express();
 const port = process.env.PORT || 3000;
 
