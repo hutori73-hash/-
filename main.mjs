@@ -1,6 +1,6 @@
 import { Client, GatewayIntentBits } from 'discord.js';
 import dotenv from 'dotenv';
-import express from 'express';   // ← 追加
+import express from 'express';   // ← Render用に追加
 import { kibun } from './kibun.js';
 import { foods } from './foods.js';
 import { nriichi } from './ri-chan.js';
@@ -66,13 +66,23 @@ const voiceNotifyChannels = {
   [process.env.VOICE_NOTIFY_GUILD_PROD]: process.env.VOICE_NOTIFY_CHANNEL_PROD,
 };
 
-client.on('voiceStateUpdate', (oldState, newState) => {
+client.on('voiceStateUpdate', async (oldState, newState) => {
   const guildId = newState.guild.id;
   const channelId = voiceNotifyChannels[guildId];
   if (!channelId) return;
 
-  const textChannel = newState.guild.channels.cache.get(channelId);
+  // fetch を使う
+  let textChannel;
+  try {
+    textChannel = await newState.guild.channels.fetch(channelId);
+  } catch (err) {
+    console.error(`❌ チャンネル取得失敗: guild=${guildId}, channel=${channelId}`, err);
+    return;
+  }
   if (!textChannel?.isTextBased()) return;
+
+  // ログ仕込み
+  console.log(`🔔 voiceStateUpdate: old=${oldState.channelId}, new=${newState.channelId}, member=${newState.member.displayName}`);
 
   // 入室
   if (!oldState.channelId && newState.channelId) {
@@ -80,9 +90,10 @@ client.on('voiceStateUpdate', (oldState, newState) => {
     const voiceChannel = newState.channel;
     const memberCount = voiceChannel.members.filter(m => !m.user.bot).size;
 
+    console.log(`➡️ 入室検知: ${member.displayName}, VC=${voiceChannel.name}, 人数=${memberCount}`);
+
     if (memberCount === 1) {
       voiceStartTimes.set(voiceChannel.id, Date.now());
-      // ★ ニックネームで通知 & コメント修正
       textChannel.send(`@everyone ${member.displayName}がお話を待ってます`);
     }
   }
@@ -91,6 +102,8 @@ client.on('voiceStateUpdate', (oldState, newState) => {
   if (oldState.channelId && !newState.channelId) {
     const voiceChannel = oldState.channel;
     const memberCount = voiceChannel.members.filter(m => !m.user.bot).size;
+
+    console.log(`⬅️ 退室検知: VC=${voiceChannel.name}, 残り人数=${memberCount}`);
 
     if (memberCount === 0) {
       const startTime = voiceStartTimes.get(voiceChannel.id);
