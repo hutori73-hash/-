@@ -1,6 +1,7 @@
+// ---------------- 必要モジュール ----------------
 import { Client, GatewayIntentBits } from 'discord.js';
 import dotenv from 'dotenv';
-import express from 'express';   // ← Render用に追加
+import express from 'express';   // Render用
 import { kibun } from './kibun.js';
 import { foods } from './foods.js';
 import { nriichi } from './ri-chan.js';
@@ -8,6 +9,7 @@ import { tuikesi } from './tuikesi.js';
 
 dotenv.config();
 
+// ---------------- Discordクライアント ----------------
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -60,29 +62,40 @@ client.on('messageDelete', async message => {
 // ---------------- ボイスチャット通知 ----------------
 const voiceStartTimes = new Map();
 
-// guildId → channelId の対応表 (.env から読み込み)
+// テストサーバー専用 (直書き)
 const voiceNotifyChannels = {
-  [process.env.VOICE_NOTIFY_GUILD_TEST]: process.env.VOICE_NOTIFY_CHANNEL_TEST,
-  [process.env.VOICE_NOTIFY_GUILD_PROD]: process.env.VOICE_NOTIFY_CHANNEL_PROD,
+  "1434604040096059475": "1434604040943173774", // guildId: channelId
 };
 
 client.on('voiceStateUpdate', async (oldState, newState) => {
-  const guildId = newState.guild.id;
-  const channelId = voiceNotifyChannels[guildId];
-  if (!channelId) return;
+  console.log('🧪 voiceStateUpdate イベント発火');
 
-  // fetch を使う
+  const guildId = newState.guild?.id;
+  console.log(`🧪 guildId: ${guildId}`);
+
+  const channelId = voiceNotifyChannels[guildId];
+  console.log(`🧪 channelId: ${channelId}`);
+
+  if (!channelId) {
+    console.log('🧪 対応する通知チャンネルが見つかりません');
+    return;
+  }
+
   let textChannel;
   try {
     textChannel = await newState.guild.channels.fetch(channelId);
+    console.log(`🧪 通知チャンネル取得成功: ${textChannel.name}`);
   } catch (err) {
     console.error(`❌ チャンネル取得失敗: guild=${guildId}, channel=${channelId}`, err);
     return;
   }
-  if (!textChannel?.isTextBased()) return;
 
-  // ログ仕込み
-  console.log(`🔔 voiceStateUpdate: old=${oldState.channelId}, new=${newState.channelId}, member=${newState.member.displayName}`);
+  if (!textChannel?.isTextBased()) {
+    console.log('🧪 通知チャンネルがテキストチャンネルではありません');
+    return;
+  }
+
+  console.log(`🔔 voiceStateUpdate: old=${oldState.channelId}, new=${newState.channelId}, member=${newState.member?.displayName}`);
 
   // 入室
   if (!oldState.channelId && newState.channelId) {
