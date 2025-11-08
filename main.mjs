@@ -1,5 +1,6 @@
 import { Client, GatewayIntentBits } from 'discord.js';
 import dotenv from 'dotenv';
+import express from 'express';   // ← 追加
 import { kibun } from './kibun.js';
 import { foods } from './foods.js';
 import { nriichi } from './ri-chan.js';
@@ -81,7 +82,8 @@ client.on('voiceStateUpdate', (oldState, newState) => {
 
     if (memberCount === 1) {
       voiceStartTimes.set(voiceChannel.id, Date.now());
-      textChannel.send(`@everyone (${member.user.username})<お話を待ってます`);
+      // ★ ニックネームで通知 & コメント修正
+      textChannel.send(`@everyone ${member.displayName}がお話を待ってます`);
     }
   }
 
@@ -96,7 +98,9 @@ client.on('voiceStateUpdate', (oldState, newState) => {
         const durationMs = Date.now() - startTime;
         const hours = Math.floor(durationMs / (1000 * 60 * 60));
         const minutes = Math.floor((durationMs / (1000 * 60)) % 60);
-        const durationText = hours > 0 ? `${hours}時間${minutes}分 話しました！` : `${minutes}分 話しました！`;
+        const durationText = hours > 0
+          ? `${hours}時間${minutes}分 話しました！`
+          : `${minutes}分 話しました！`;
 
         textChannel.send(durationText);
       }
@@ -112,3 +116,19 @@ if (!process.env.DISCORD_TOKEN) {
 }
 
 client.login(process.env.DISCORD_TOKEN);
+
+// ---------------- Express サーバー (Render用) ----------------
+const app = express();
+const port = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+  res.json({
+    status: 'Bot is running! 🤖',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.listen(port, () => {
+  console.log(`🌐 Web サーバーがポート ${port} で起動しました`);
+});
