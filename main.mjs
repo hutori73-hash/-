@@ -68,32 +68,18 @@ const voiceNotifyChannels = {
 };
 
 client.on('voiceStateUpdate', async (oldState, newState) => {
-  console.log('🧪 voiceStateUpdate イベント発火');
-
   const guildId = newState.guild?.id;
-  console.log(`🧪 guildId: ${guildId}`);
-
   const channelId = voiceNotifyChannels[guildId];
-  console.log(`🧪 channelId: ${channelId}`);
-
-  if (!channelId) {
-    console.log('🧪 対応する通知チャンネルが見つかりません');
-    return;
-  }
+  if (!channelId) return;
 
   let textChannel;
   try {
     textChannel = await newState.guild.channels.fetch(channelId);
-    console.log(`🧪 通知チャンネル取得成功: ${textChannel.name}`);
   } catch (err) {
     console.error(`❌ チャンネル取得失敗: guild=${guildId}, channel=${channelId}`, err);
     return;
   }
-
-  if (!textChannel?.isTextBased()) {
-    console.log('🧪 通知チャンネルがテキストチャンネルではありません');
-    return;
-  }
+  if (!textChannel?.isTextBased()) return;
 
   console.log(`🔔 voiceStateUpdate: old=${oldState.channelId}, new=${newState.channelId}, member=${newState.member?.displayName}`);
 
