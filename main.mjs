@@ -62,9 +62,10 @@ client.on('messageDelete', async message => {
 // ---------------- ボイスチャット通知 ----------------
 const voiceStartTimes = new Map();
 
-// テストサーバー専用 (直書き)
+// 複数サーバー対応
 const voiceNotifyChannels = {
-  "1434604040096059475": "1434604040943173774", // guildId: channelId
+  "1434604040096059475": "1434604040943173774", // テストサーバー
+  "1236192277244678224": "1260568201880932403", // 新しいサーバー
 };
 
 client.on('voiceStateUpdate', async (oldState, newState) => {
