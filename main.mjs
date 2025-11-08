@@ -1,10 +1,9 @@
 import { Client, GatewayIntentBits } from 'discord.js';
 import dotenv from 'dotenv';
-import express from 'express';
-import { kibun } from './kibun.js';   // ← moods → kibun に変更
+import { kibun } from './kibun.js';
 import { foods } from './foods.js';
 import { nriichi } from './ri-chan.js';
-import { tuikesi } from './tuikesi.js';   // ← 追加
+import { tuikesi } from './tuikesi.js';
 
 dotenv.config();
 
@@ -14,92 +13,79 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildVoiceStates,   // ← ボイス状態検知に必要
+    GatewayIntentBits.GuildVoiceStates,
   ],
 });
 
 client.once('ready', () => {
-  console.log(`🎉 ${client.user.tag} が正常に起動しました！`);
-  console.log(`📊 ${client.guilds.cache.size} つのサーバーに参加中`);
+  console.log(`✅ 起動: ${client.user.tag} (${client.guilds.cache.size} サーバー参加中)`);
 });
 
-// ✅ スラッシュコマンド：/食べ物占い
+// ---------------- スラッシュコマンド ----------------
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
-
   if (interaction.commandName === '食べ物占い') {
-    const roll = Math.random();
-    let rarity;
-
-    // R25% / N75%
-    if (roll < 0.25) {
-      rarity = 'R';
-    } else {
-      rarity = 'N';
-    }
-
+    const rarity = Math.random() < 0.25 ? 'R' : 'N';
     const candidates = foods[rarity];
     const selected = candidates[Math.floor(Math.random() * candidates.length)];
-    await interaction.reply(`${selected}`);
-    console.log(`🍽 ${interaction.user.tag} が /食べ物占い → ${rarity}`);
+    await interaction.reply(selected);
+    console.log(`🍽 ${interaction.user.tag} → ${rarity}`);
   }
 });
 
-// ✅ 通常メッセージ：キーワード反応
+// ---------------- メッセージ反応 ----------------
 client.on('messageCreate', async message => {
   if (message.author.bot) return;
-
   const content = message.content;
 
-  // 「今日の気分」に反応
   if (content.includes('今日の気分')) {
-    const randomMood = kibun[Math.floor(Math.random() * kibun.length)];
-    await message.reply(randomMood);
-    console.log(`📝 ${message.author.tag} が「${content}」に反応 → ${randomMood}`);
+    const reply = kibun[Math.floor(Math.random() * kibun.length)];
+    await message.reply(reply);
   }
 
-  // 「ﾝﾘｲﾁ」に反応
   if (content.includes('ﾝﾘｲﾁ')) {
-    const randomReply = nriichi[Math.floor(Math.random() * nriichi.length)];
-    await message.reply(randomReply);
-    console.log(`🌀 ${message.author.tag} が「${content}」に反応 → ${randomReply}`);
+    const reply = nriichi[Math.floor(Math.random() * nriichi.length)];
+    await message.reply(reply);
   }
 });
 
-// ✅ メッセージ削除検知 → ランダムコメント
+// ---------------- メッセージ削除検知 ----------------
 client.on('messageDelete', async message => {
-  if (!message.channel) return;
-  if (message.author?.bot) return;
-
-  const randomComment = tuikesi[Math.floor(Math.random() * tuikesi.length)];
-  await message.channel.send(randomComment);
-  console.log(`🗑 ${message.author?.tag ?? '不明'} のメッセージ削除 → ${randomComment}`);
+  if (!message.channel || message.author?.bot) return;
+  const reply = tuikesi[Math.floor(Math.random() * tuikesi.length)];
+  await message.channel.send(reply);
 });
 
-// ✅ ボイスチャット開始／終了通知
+// ---------------- ボイスチャット通知 ----------------
 const voiceStartTimes = new Map();
 
-client.on('voiceStateUpdate', (oldState, newState) => {
-  const textChannel = newState.guild.channels.cache.get('1434697004151210127');
-  if (!textChannel || !textChannel.isTextBased()) return;
+// guildId → channelId の対応表 (.env から読み込み)
+const voiceNotifyChannels = {
+  [process.env.VOICE_NOTIFY_GUILD_TEST]: process.env.VOICE_NOTIFY_CHANNEL_TEST,
+  [process.env.VOICE_NOTIFY_GUILD_PROD]: process.env.VOICE_NOTIFY_CHANNEL_PROD,
+};
 
-  // 入室判定
+client.on('voiceStateUpdate', (oldState, newState) => {
+  const guildId = newState.guild.id;
+  const channelId = voiceNotifyChannels[guildId];
+  if (!channelId) return;
+
+  const textChannel = newState.guild.channels.cache.get(channelId);
+  if (!textChannel?.isTextBased()) return;
+
+  // 入室
   if (!oldState.channelId && newState.channelId) {
     const member = newState.member;
     const voiceChannel = newState.channel;
-
     const memberCount = voiceChannel.members.filter(m => !m.user.bot).size;
-    if (memberCount === 1) {
-      // 開始時刻を記録
-      voiceStartTimes.set(voiceChannel.id, Date.now());
 
-      // 開始通知（全体メンション）
+    if (memberCount === 1) {
+      voiceStartTimes.set(voiceChannel.id, Date.now());
       textChannel.send(`@everyone (${member.user.username})<お話を待ってます`);
-      console.log(`🎧 START: ${member.user.tag} started ${voiceChannel.name}`);
     }
   }
 
-  // 退室判定
+  // 退室
   if (oldState.channelId && !newState.channelId) {
     const voiceChannel = oldState.channel;
     const memberCount = voiceChannel.members.filter(m => !m.user.bot).size;
@@ -110,57 +96,19 @@ client.on('voiceStateUpdate', (oldState, newState) => {
         const durationMs = Date.now() - startTime;
         const hours = Math.floor(durationMs / (1000 * 60 * 60));
         const minutes = Math.floor((durationMs / (1000 * 60)) % 60);
-
-        let durationText;
-        if (hours > 0) {
-          durationText = `${hours}時間${minutes}分 話しました！`;
-        } else {
-          durationText = `${minutes}分 話しました！`;
-        }
+        const durationText = hours > 0 ? `${hours}時間${minutes}分 話しました！` : `${minutes}分 話しました！`;
 
         textChannel.send(durationText);
-        console.log(`🎧 END: ${voiceChannel.name} lasted ${durationText}`);
       }
       voiceStartTimes.delete(voiceChannel.id);
     }
   }
 });
 
-// ✅ エラーハンドリング
-client.on('error', (error) => {
-  console.error('❌ Discord クライアントエラー:', error);
-});
-
-process.on('SIGINT', () => {
-  console.log('🛑 Botを終了しています...');
-  client.destroy();
-  process.exit(0);
-});
-
+// ---------------- 起動処理 ----------------
 if (!process.env.DISCORD_TOKEN) {
-  console.error('❌ DISCORD_TOKEN が .env ファイルに設定されていません！');
+  console.error('❌ DISCORD_TOKEN が設定されていません');
   process.exit(1);
 }
 
-console.log('🔄 Discord に接続中...');
-client.login(process.env.DISCORD_TOKEN)
-  .catch(error => {
-    console.error('❌ ログインに失敗しました:', error);
-    process.exit(1);
-  });
-
-// ✅ Express Webサーバー（Uptime用）
-const app = express();
-const port = process.env.PORT || 3000;
-
-app.get('/', (req, res) => {
-  res.json({
-    status: 'Bot is running! 🤖',
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString()
-  });
-});
-
-app.listen(port, () => {
-  console.log(`🌐 Web サーバーがポート ${port} で起動しました`);
-});
+client.login(process.env.DISCORD_TOKEN);
