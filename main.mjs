@@ -1,7 +1,7 @@
 import { Client, GatewayIntentBits } from 'discord.js';
 import dotenv from 'dotenv';
 import express from 'express';
-import { moods } from './moods.js';
+import { kibun } from './kibun.js';   // ← moods → kibun に変更
 import { foods } from './foods.js';
 import { nriichi } from './ri-chan.js';
 import { tuikesi } from './tuikesi.js';   // ← 追加
@@ -14,6 +14,7 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildVoiceStates,   // ← ボイス状態検知に必要
   ],
 });
 
@@ -29,9 +30,9 @@ client.on('interactionCreate', async interaction => {
   if (interaction.commandName === '食べ物占い') {
     const roll = Math.random();
     let rarity;
-    if (roll < 0.10) {
-      rarity = 'SR';
-    } else if (roll < 0.40) {
+
+    // R25% / N75%
+    if (roll < 0.25) {
       rarity = 'R';
     } else {
       rarity = 'N';
@@ -52,7 +53,7 @@ client.on('messageCreate', async message => {
 
   // 「今日の気分」に反応
   if (content.includes('今日の気分')) {
-    const randomMood = moods[Math.floor(Math.random() * moods.length)];
+    const randomMood = kibun[Math.floor(Math.random() * kibun.length)];
     await message.reply(randomMood);
     console.log(`📝 ${message.author.tag} が「${content}」に反応 → ${randomMood}`);
   }
@@ -73,6 +74,56 @@ client.on('messageDelete', async message => {
   const randomComment = tuikesi[Math.floor(Math.random() * tuikesi.length)];
   await message.channel.send(randomComment);
   console.log(`🗑 ${message.author?.tag ?? '不明'} のメッセージ削除 → ${randomComment}`);
+});
+
+// ✅ ボイスチャット開始／終了通知
+const voiceStartTimes = new Map();
+
+client.on('voiceStateUpdate', (oldState, newState) => {
+  const textChannel = newState.guild.channels.cache.get('1434697004151210127');
+  if (!textChannel || !textChannel.isTextBased()) return;
+
+  // 入室判定
+  if (!oldState.channelId && newState.channelId) {
+    const member = newState.member;
+    const voiceChannel = newState.channel;
+
+    const memberCount = voiceChannel.members.filter(m => !m.user.bot).size;
+    if (memberCount === 1) {
+      // 開始時刻を記録
+      voiceStartTimes.set(voiceChannel.id, Date.now());
+
+      // 開始通知（全体メンション）
+      textChannel.send(`@everyone (${member.user.username})<お話を待ってます`);
+      console.log(`🎧 START: ${member.user.tag} started ${voiceChannel.name}`);
+    }
+  }
+
+  // 退室判定
+  if (oldState.channelId && !newState.channelId) {
+    const voiceChannel = oldState.channel;
+    const memberCount = voiceChannel.members.filter(m => !m.user.bot).size;
+
+    if (memberCount === 0) {
+      const startTime = voiceStartTimes.get(voiceChannel.id);
+      if (startTime) {
+        const durationMs = Date.now() - startTime;
+        const hours = Math.floor(durationMs / (1000 * 60 * 60));
+        const minutes = Math.floor((durationMs / (1000 * 60)) % 60);
+
+        let durationText;
+        if (hours > 0) {
+          durationText = `${hours}時間${minutes}分 話しました！`;
+        } else {
+          durationText = `${minutes}分 話しました！`;
+        }
+
+        textChannel.send(durationText);
+        console.log(`🎧 END: ${voiceChannel.name} lasted ${durationText}`);
+      }
+      voiceStartTimes.delete(voiceChannel.id);
+    }
+  }
 });
 
 // ✅ エラーハンドリング
