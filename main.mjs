@@ -4,6 +4,7 @@ import express from 'express';
 import { moods } from './moods.js';
 import { foods } from './foods.js';
 import { nriichi } from './ri-chan.js';
+import { tuikesi } from './tuikesi.js';   // ← 追加
 
 dotenv.config();
 
@@ -62,6 +63,16 @@ client.on('messageCreate', async message => {
     await message.reply(randomReply);
     console.log(`🌀 ${message.author.tag} が「${content}」に反応 → ${randomReply}`);
   }
+});
+
+// ✅ メッセージ削除検知 → ランダムコメント
+client.on('messageDelete', async message => {
+  if (!message.channel) return;
+  if (message.author?.bot) return;
+
+  const randomComment = tuikesi[Math.floor(Math.random() * tuikesi.length)];
+  await message.channel.send(randomComment);
+  console.log(`🗑 ${message.author?.tag ?? '不明'} のメッセージ削除 → ${randomComment}`);
 });
 
 // ✅ エラーハンドリング
