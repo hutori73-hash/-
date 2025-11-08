@@ -61,6 +61,7 @@ client.on('messageDelete', async message => {
 
 // ---------------- ボイスチャット通知 ----------------
 const voiceStartTimes = new Map();
+const notifiedGuilds = new Set(); // 通知済みサーバーを記録
 
 // 複数サーバー対応
 const voiceNotifyChannels = {
@@ -82,19 +83,26 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
   }
   if (!textChannel?.isTextBased()) return;
 
-  console.log(`🔔 voiceStateUpdate: old=${oldState.channelId}, new=${newState.channelId}, member=${newState.member?.displayName}`);
-
   // 入室
   if (!oldState.channelId && newState.channelId) {
     const member = newState.member;
+
+    // Botは通知しない
+    if (member.user.bot) {
+      console.log(`🤖 Bot入室検知: ${member.displayName} → 通知スキップ`);
+      return;
+    }
+
     const voiceChannel = newState.channel;
     const memberCount = voiceChannel.members.filter(m => !m.user.bot).size;
 
     console.log(`➡️ 入室検知: ${member.displayName}, VC=${voiceChannel.name}, 人数=${memberCount}`);
 
-    if (memberCount === 1) {
+    // まだ通知していないサーバーで、最初の人間が入室した時だけ通知
+    if (memberCount === 1 && !notifiedGuilds.has(guildId)) {
       voiceStartTimes.set(voiceChannel.id, Date.now());
       textChannel.send(`@everyone ${member.displayName}がお話を待ってます`);
+      notifiedGuilds.add(guildId); // 通知済みにする
     }
   }
 
@@ -118,6 +126,7 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
         textChannel.send(durationText);
       }
       voiceStartTimes.delete(voiceChannel.id);
+      notifiedGuilds.delete(guildId); // 全員退室したら通知フラグ解除
     }
   }
 });
