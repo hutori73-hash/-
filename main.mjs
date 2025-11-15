@@ -66,7 +66,7 @@ const notifiedGuilds = new Set(); // 通知済みサーバーを記録
 // 複数サーバー対応
 const voiceNotifyChannels = {
   "1434604040096059475": "1434604040943173774", // テストサーバー
-  "1236192277244678224": "1260568201880932403", // 新しいサーバー
+  "1236192277244678224": "1260568201880932403", // 弱者の会
 };
 
 client.on('voiceStateUpdate', async (oldState, newState) => {
@@ -128,6 +128,48 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
       voiceStartTimes.delete(voiceChannel.id);
       notifiedGuilds.delete(guildId); // 全員退室したら通知フラグ解除
     }
+  }
+});
+
+// ---------------- 入退会・BAN通知 ----------------
+const notifyChannelId = "1434604040943173774";
+
+// 入会
+client.on('guildMemberAdd', async member => {
+  try {
+    const textChannel = await member.guild.channels.fetch(notifyChannelId);
+    if (textChannel?.isTextBased()) {
+      await textChannel.send(`ハロー ${member.displayName}、あなたを待っていましたよ。`);
+      console.log(`🙌 入会通知: ${member.displayName} が ${member.guild.name} に参加`);
+    }
+  } catch (err) {
+    console.error(`❌ 入会通知チャンネル取得失敗`, err);
+  }
+});
+
+// 退会
+client.on('guildMemberRemove', async member => {
+  try {
+    const textChannel = await member.guild.channels.fetch(notifyChannelId);
+    if (textChannel?.isTextBased()) {
+      await textChannel.send(`${member.displayName} が脱走しました。\n逃げるな卑怯者！`);
+      console.log(`🚪 退会通知: ${member.displayName} が ${member.guild.name} を脱走`);
+    }
+  } catch (err) {
+    console.error(`❌ 退会通知チャンネル取得失敗`, err);
+  }
+});
+
+// BAN
+client.on('guildBanAdd', async ban => {
+  try {
+    const textChannel = await ban.guild.channels.fetch(notifyChannelId);
+    if (textChannel?.isTextBased()) {
+      await textChannel.send(`⛔ ${ban.user.username} さんがBANされました。サーバーの治安が1ポイント上がりました！`);
+      console.log(`🔨 BAN通知: ${ban.user.username} が ${ban.guild.name} でBAN`);
+    }
+  } catch (err) {
+    console.error(`❌ BAN通知チャンネル取得失敗`, err);
   }
 });
 
