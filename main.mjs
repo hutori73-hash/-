@@ -17,6 +17,7 @@ const client = new Client({
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildVoiceStates,
+    GatewayIntentBits.GuildBans, // ← BANイベントを受け取るために追加
   ],
 });
 
@@ -147,9 +148,13 @@ client.on('guildMemberAdd', async member => {
   }
 });
 
-// 退会
+// 退会（BANは除外）
 client.on('guildMemberRemove', async member => {
   try {
+    // BANされているか確認
+    const isBanned = await member.guild.bans.fetch(member.id).catch(() => null);
+    if (isBanned) return; // BANなら退会メッセージを送らない
+
     const textChannel = await member.guild.channels.fetch(notifyChannelId);
     if (textChannel?.isTextBased()) {
       await textChannel.send(`${member.toString()} が脱走しました。\n逃げるな卑怯者！`);
