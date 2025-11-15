@@ -66,7 +66,7 @@ const notifiedGuilds = new Set(); // 通知済みサーバーを記録
 // 複数サーバー対応
 const voiceNotifyChannels = {
   "1434604040096059475": "1434604040943173774", // テストサーバー
-  "1236192277244678224": "1260568201880932403", // 弱者の会
+  "1236192277244678224": "1260568201880932403", // 新しいサーバー
 };
 
 client.on('voiceStateUpdate', async (oldState, newState) => {
@@ -101,7 +101,7 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
     // まだ通知していないサーバーで、最初の人間が入室した時だけ通知
     if (memberCount === 1 && !notifiedGuilds.has(guildId)) {
       voiceStartTimes.set(voiceChannel.id, Date.now());
-      textChannel.send(`@everyone ${member.displayName}がお話を待ってます`);
+      textChannel.send(`@everyone ${member.toString()}がお話を待ってます`);
       notifiedGuilds.add(guildId); // 通知済みにする
     }
   }
@@ -139,7 +139,7 @@ client.on('guildMemberAdd', async member => {
   try {
     const textChannel = await member.guild.channels.fetch(notifyChannelId);
     if (textChannel?.isTextBased()) {
-      await textChannel.send(`ハロー ${member.displayName}、あなたを待っていましたよ。`);
+      await textChannel.send(`ハロー ${member.toString()}、あなたを待っていましたよ。`);
       console.log(`🙌 入会通知: ${member.displayName} が ${member.guild.name} に参加`);
     }
   } catch (err) {
@@ -152,7 +152,7 @@ client.on('guildMemberRemove', async member => {
   try {
     const textChannel = await member.guild.channels.fetch(notifyChannelId);
     if (textChannel?.isTextBased()) {
-      await textChannel.send(`${member.displayName} が脱走しました。\n逃げるな卑怯者！`);
+      await textChannel.send(`${member.toString()} が脱走しました。\n逃げるな卑怯者！`);
       console.log(`🚪 退会通知: ${member.displayName} が ${member.guild.name} を脱走`);
     }
   } catch (err) {
@@ -165,7 +165,7 @@ client.on('guildBanAdd', async ban => {
   try {
     const textChannel = await ban.guild.channels.fetch(notifyChannelId);
     if (textChannel?.isTextBased()) {
-      await textChannel.send(`⛔ ${ban.user.username} さんがBANされました。サーバーの治安が1ポイント上がりました！`);
+      await textChannel.send(`⛔ <@${ban.user.id}> さんがBANされました。サーバーの治安が1ポイント上がりました！`);
       console.log(`🔨 BAN通知: ${ban.user.username} が ${ban.guild.name} でBAN`);
     }
   } catch (err) {
