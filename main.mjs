@@ -17,7 +17,7 @@ const client = new Client({
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildVoiceStates,
-    // BANも退会と同じメッセージにするので GuildBans は必須ではない
+    // BANも退会と同じメッセージにするので GuildBans は不要
   ],
 });
 
@@ -133,12 +133,20 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
 });
 
 // ---------------- 入退会・BAN通知 ----------------
-const notifyChannelId = "1434604040943173774";
+
+// サーバーごとに通知チャンネルを設定
+const notifyChannels = {
+  "1434604040096059475": "1434604040943173774", // テストサーバー
+  "1236192277244678224": "1236212360901820497", // 導入サーバー
+};
 
 // 入会
 client.on('guildMemberAdd', async member => {
   try {
-    const textChannel = await member.guild.channels.fetch(notifyChannelId);
+    const channelId = notifyChannels[member.guild.id];
+    if (!channelId) return;
+
+    const textChannel = await member.guild.channels.fetch(channelId);
     if (textChannel?.isTextBased()) {
       await textChannel.send(`ハロー ${member.toString()}、あなたを待っていましたよ。`);
       console.log(`🙌 入会通知: ${member.displayName} が ${member.guild.name} に参加`);
@@ -151,7 +159,10 @@ client.on('guildMemberAdd', async member => {
 // 退会（BANも含む）
 client.on('guildMemberRemove', async member => {
   try {
-    const textChannel = await member.guild.channels.fetch(notifyChannelId);
+    const channelId = notifyChannels[member.guild.id];
+    if (!channelId) return;
+
+    const textChannel = await member.guild.channels.fetch(channelId);
     if (textChannel?.isTextBased()) {
       await textChannel.send(`${member.toString()} が脱走しました。\n逃げるな卑怯者！`);
       console.log(`🚪 退会通知: ${member.displayName} が ${member.guild.name} を脱走`);
