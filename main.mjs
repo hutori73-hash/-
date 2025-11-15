@@ -17,7 +17,7 @@ const client = new Client({
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildVoiceStates,
-    GatewayIntentBits.GuildBans, // ← BANイベントを受け取るために追加
+    // BANも退会と同じメッセージにするので GuildBans は必須ではない
   ],
 });
 
@@ -148,13 +148,9 @@ client.on('guildMemberAdd', async member => {
   }
 });
 
-// 退会（BANは除外）
+// 退会（BANも含む）
 client.on('guildMemberRemove', async member => {
   try {
-    // BANされているか確認
-    const isBanned = await member.guild.bans.fetch(member.id).catch(() => null);
-    if (isBanned) return; // BANなら退会メッセージを送らない
-
     const textChannel = await member.guild.channels.fetch(notifyChannelId);
     if (textChannel?.isTextBased()) {
       await textChannel.send(`${member.toString()} が脱走しました。\n逃げるな卑怯者！`);
@@ -162,19 +158,6 @@ client.on('guildMemberRemove', async member => {
     }
   } catch (err) {
     console.error(`❌ 退会通知チャンネル取得失敗`, err);
-  }
-});
-
-// BAN
-client.on('guildBanAdd', async ban => {
-  try {
-    const textChannel = await ban.guild.channels.fetch(notifyChannelId);
-    if (textChannel?.isTextBased()) {
-      await textChannel.send(`⛔ <@${ban.user.id}> さんがBANされました。サーバーの治安が1ポイント上がりました！`);
-      console.log(`🔨 BAN通知: ${ban.user.username} が ${ban.guild.name} でBAN`);
-    }
-  } catch (err) {
-    console.error(`❌ BAN通知チャンネル取得失敗`, err);
   }
 });
 
